@@ -21,7 +21,7 @@ def main():
 
     encoder = d3rlpy.models.encoders.VectorEncoderFactory([256, 256, 256])
     
-    sac_n = d3rlpy.algos.EDAC(batch_size=256,
+    edac = d3rlpy.algos.EDAC(batch_size=256,
                            actor_learning_rate=3e-4,
                            critic_learning_rate=3e-4,
                            temp_learning_rate=3e-4,
@@ -31,7 +31,7 @@ def main():
                            eta=args.eta,
                            use_gpu=args.gpu)
     
-    sac_n.fit(dataset.episodes,
+    edac.fit(dataset.episodes,
             eval_episodes=test_episodes,
             n_steps=500000,
             n_steps_per_epoch=1000,

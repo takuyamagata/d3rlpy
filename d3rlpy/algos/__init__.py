@@ -16,6 +16,7 @@ from .nfq import NFQ
 from .plas import PLAS, PLASWithPerturbation
 from .random_policy import DiscreteRandomPolicy, RandomPolicy
 from .sac import SAC, DiscreteSAC
+from .edac import EDAC
 from .td3 import TD3
 from .td3_plus_bc import TD3PlusBC
 
@@ -41,6 +42,7 @@ __all__ = [
     "PLASWithPerturbation",
     "SAC",
     "DiscreteSAC",
+    "EDAC",  # Ensemble Diversified Actor-Critic
     "TD3",
     "TD3PlusBC",
     "RandomPolicy",
@@ -74,6 +76,7 @@ CONTINUOUS_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "mopo": MOPO,
     "plas": PLASWithPerturbation,
     "sac": SAC,
+    "edac": EDAC,
     "td3": TD3,
     "td3_plus_bc": TD3PlusBC,
     "random": RandomPolicy,

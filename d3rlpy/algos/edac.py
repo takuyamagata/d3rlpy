@@ -133,7 +133,7 @@ class EDAC(AlgoBase):
         gamma: float = 0.99,
         tau: float = 0.005,
         eta: float = 1.0,
-        n_critics: int = 2,
+        n_critics: int = 10,
         initial_temperature: float = 1.0,
         use_gpu: UseGPUArg = False,
         scaler: ScalerArg = None,
