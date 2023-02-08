@@ -63,6 +63,10 @@ def _reduce_quantile_ensemble(
         min_values = _gather_quantiles_by_indices(y, min_indices)
         max_values = _gather_quantiles_by_indices(y, max_indices)
         return lam * min_values + (1.0 - lam) * max_values
+    elif reduction == "random":
+        batch_size = mean.shape[-1]
+        indices = torch.randint(y.shape[dim], (batch_size,), device=y.device)
+        return _gather_quantiles_by_indices(y, indices)
     raise ValueError
 
 
@@ -87,7 +91,7 @@ class EnsembleQFunction(nn.Module):  # type: ignore
         terminals: torch.Tensor,
         gamma: float = 0.99,
     ) -> torch.Tensor:
-        assert target.ndim == 2
+        # assert target.ndim == 2
 
         td_sum = torch.tensor(
             0.0, dtype=torch.float32, device=observations.device
@@ -162,17 +166,26 @@ class EnsembleDiscreteQFunction(EnsembleQFunction):
 
 class EnsembleContinuousQFunction(EnsembleQFunction):
     def forward(
-        self, x: torch.Tensor, action: torch.Tensor, reduction: str = "mean"
+        self, x: torch.Tensor, 
+        action: torch.Tensor, 
+        reduction: str = "mean", 
+        tile: bool = False,
     ) -> torch.Tensor:
         values = []
-        for q_func in self._q_funcs:
-            values.append(q_func(x, action).view(1, x.shape[0], 1))
+        for n in range(len(self._q_funcs)):
+            if tile:
+                values.append(self._q_funcs[n](x[n,], action[n,]).view(1, x.shape[1], 1))                
+            else:
+                values.append(self._q_funcs[n](x, action).view(1, x.shape[0], 1))
         return _reduce_ensemble(torch.cat(values, dim=0), reduction)
 
     def __call__(
-        self, x: torch.Tensor, action: torch.Tensor, reduction: str = "mean"
+        self, x: torch.Tensor, 
+        action: torch.Tensor, 
+        reduction: str = "mean",
+        tile: bool = False,
     ) -> torch.Tensor:
-        return cast(torch.Tensor, super().__call__(x, action, reduction))
+        return cast(torch.Tensor, super().__call__(x, action, reduction, tile))
 
     def compute_target(
         self,

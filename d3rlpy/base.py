@@ -121,7 +121,8 @@ def _deseriealize_params(params: Dict[str, Any]) -> Dict[str, Any]:
             params[key] = create_encoder_factory(
                 value["type"], **value["params"]
             )
-        elif key == "q_func_factory":
+        elif "q_func_factory" in key:
+            # elif key == "q_func_factory":
             params[key] = create_q_func_factory(
                 value["type"], **value["params"]
             )
