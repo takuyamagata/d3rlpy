@@ -6,29 +6,24 @@ import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='hopper-medium-v0')
+    parser.add_argument('--dataset', type=str, default='halfcheetah-medium-replay-v2')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--gpu', type=int)
-    parser.add_argument('--mode', type=str, default='normal')
+    parser.add_argument('--mode', type=str, default='delayed')
     args = parser.parse_args()
 
     #dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
-    dataset, env = d3rlpy.datasets.get_d4rl(args.dataset)
+    dataset, env = d3rlpy.datasets.get_dataset(args.dataset, mode=args.mode)
 
     # fix seed
     d3rlpy.seed(args.seed)
     env.seed(args.seed)
-
+    
     if args.mode == "delayed":
         print("Delayed reward mode enabled")
-        for path in dataset.episodes:
-            total_return = np.sum(path.rewards)
-            for n in range(len(path.rewards)):
-                path.rewards[n] = 0
-            path.rewards[n] = total_return
 
     _, test_episodes = train_test_split(dataset, test_size=0.2)
-
+        
     reward_scaler = d3rlpy.preprocessing.ReturnBasedRewardScaler(
         multiplier=1000.0)
 

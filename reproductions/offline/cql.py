@@ -8,9 +8,11 @@ def main():
     parser.add_argument('--dataset', type=str, default='hopper-medium-v0')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--gpu', type=int)
+    parser.add_argument('--mode', type=str, default='normal')
+    
     args = parser.parse_args()
 
-    dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
+    dataset, env = d3rlpy.datasets.get_dataset(args.dataset, mode=args.mode)
 
     # fix seed
     d3rlpy.seed(args.seed)
@@ -38,7 +40,7 @@ def main():
 
     cql.fit(dataset.episodes,
             eval_episodes=test_episodes,
-            n_steps=500000,
+            n_steps=5000, # 500000,
             n_steps_per_epoch=1000,
             save_interval=10,
             scorers={

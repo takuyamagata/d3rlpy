@@ -328,7 +328,7 @@ ATARI_GAMES = [
 ]
 
 
-def get_dataset(env_name: str) -> Tuple[MDPDataset, gym.Env]:
+def get_dataset(env_name: str, mode: str ='normal') -> Tuple[MDPDataset, gym.Env]:
     """Returns dataset and envrironment by guessing from name.
 
     This function returns dataset by matching name with the following datasets.
@@ -365,17 +365,38 @@ def get_dataset(env_name: str) -> Tuple[MDPDataset, gym.Env]:
 
     """
     if env_name == "cartpole-replay":
-        return get_cartpole(dataset_type="replay")
+        dataset, env = get_cartpole(dataset_type="replay")
     elif env_name == "cartpole-random":
-        return get_cartpole(dataset_type="random")
+        dataset, env = get_cartpole(dataset_type="random")
     elif env_name == "pendulum-replay":
-        return get_pendulum(dataset_type="replay")
+        dataset, env = get_pendulum(dataset_type="replay")
     elif env_name == "pendulum-random":
-        return get_pendulum(dataset_type="random")
+        dataset, env = get_pendulum(dataset_type="random")
     elif re.match(r"^bullet-.+$", env_name):
-        return get_d4rl(env_name)
+        dataset, env = get_d4rl(env_name)
     elif re.match(r"hopper|halfcheetah|walker|ant|maze2d", env_name):
-        return get_d4rl(env_name)
+        dataset, env = get_d4rl(env_name)
     elif re.match(re.compile("|".join(ATARI_GAMES)), env_name):
-        return get_atari(env_name)
-    raise ValueError(f"Unrecognized env_name: {env_name}.")
+        dataset, env = get_atari(env_name)
+    else:
+        raise ValueError(f"Unrecognized env_name: {env_name}.")
+
+    if mode == 'delayed':
+        total_rw = 0.0
+        for n in range(len(dataset.rewards)-1):
+            if dataset.episode_terminals[n+1] == 1.0:
+                dataset.rewards[n] = total_rw
+                total_rw = 0.0
+            else:
+                total_rw = total_rw + dataset.rewards[n]
+                dataset.rewards[n] = 0.0
+                        
+        dataset = MDPDataset(
+            observations=dataset.observations,
+            actions=dataset.actions,
+            rewards=dataset.rewards,
+            terminals=dataset.terminals,
+            episode_terminals=dataset.episode_terminals,
+        )
+    
+    return dataset, env

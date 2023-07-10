@@ -14,7 +14,7 @@ def main():
     args = parser.parse_args()
     
     #dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
-    dataset, env = d3rlpy.datasets.get_d4rl(args.dataset)
+    dataset, env = d3rlpy.datasets.get_dataset(args.dataset, mode=args.mode)
 
     # fix seed
     d3rlpy.seed(args.seed)
@@ -24,14 +24,6 @@ def main():
 
     encoder = d3rlpy.models.encoders.VectorEncoderFactory([256, 256, 256])
    
-    if args.mode == "delayed":
-        print("Delayed reward mode enabled")
-        for path in dataset.episodes:
-            total_return = np.sum(path.rewards)
-            for n in range(len(path.rewards)):
-                path.rewards[n] = 0
-            path.rewards[n] = total_return
-
     edac = d3rlpy.algos.EDAC(batch_size=256,
                            actor_learning_rate=3e-4,
                            critic_learning_rate=3e-4,
