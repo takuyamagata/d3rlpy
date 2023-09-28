@@ -473,7 +473,7 @@ class ReturnBasedRewardScaler(RewardScaler):
 
     def reverse_transform(self, reward: torch.Tensor) -> torch.Tensor:
         assert self._return_max is not None and self._return_min is not None
-        return reward * (self._return_max + self._return_min) / self._multiplier
+        return reward * (self._return_max - self._return_min) / self._multiplier
 
     def transform_numpy(self, reward: np.ndarray) -> np.ndarray:
         assert self._return_max is not None and self._return_min is not None
