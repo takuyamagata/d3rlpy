@@ -57,7 +57,7 @@ def main():
             callback=callback,
             scorers={
             },
-            experiment_name=f"IQL_critic_{args.dataset}_{args.seed}_{args.mode}",
+            experiment_name=f"IQL2_critic_{args.dataset}_{args.seed}_{args.mode}",
             with_timestamp=False,)
 
     # relabelling rewards with RTGs
@@ -70,7 +70,7 @@ def main():
         q_t = iql.reward_scaler.reverse_transform(q_t)
     else:
         q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations).to(f"cuda:{args.gpu}"), 
-                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1).to(f"cuda:{args.gpu}")
+                                     torch.tensor(dataset.actions).to(f"cuda:{args.gpu}"), "min").cpu().detach().numpy().reshape(-1)
         q_t = iql.reward_scaler.reverse_transform(q_t)
     num_relabel = 0
     for n in np.arange(len(r)-1, -1, -1): # index backwards
