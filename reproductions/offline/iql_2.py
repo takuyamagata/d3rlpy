@@ -69,9 +69,9 @@ def main():
                                     torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1)
         q_t = iql.reward_scaler.reverse_transform(q_t)
     else:
-        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations), 
-                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1).gpu()
-        q_t = iql.reward_scaler.reverse_transform(q_t).cpu()
+        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations).to(f"cuda:{args.gpu}"), 
+                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1).to(f"cuda:{args.gpu}")
+        q_t = iql.reward_scaler.reverse_transform(q_t)
     num_relabel = 0
     for n in np.arange(len(r)-1, -1, -1): # index backwards
         _R = r[n] + gamma * _R
