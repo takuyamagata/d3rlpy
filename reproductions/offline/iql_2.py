@@ -104,7 +104,7 @@ def main():
                 'environment': d3rlpy.metrics.evaluate_on_environment(env),
                 'value_scale': d3rlpy.metrics.average_value_estimation_scorer,
             },
-            experiment_name=f"IQL_actor_{args.dataset}_{args.seed}_{args.mode}",
+            experiment_name=f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}",
             with_timestamp=False,)
 
 
