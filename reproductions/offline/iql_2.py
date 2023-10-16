@@ -51,7 +51,7 @@ def main():
 
     iql.fit(dataset.episodes,
             eval_episodes=test_episodes,
-            n_steps=500000, # 30000,
+            n_steps=500000, #500000, # 30000,
             n_steps_per_epoch=1000,
             save_interval=100,
             callback=callback,
@@ -64,9 +64,14 @@ def main():
     gamma = 1.0 #0.99 # discount factor
     r = dataset.rewards
     _R = 0.0 # temporal RTGs
-    q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations), 
-                                 torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1)
-    q_t = iql.reward_scaler.reverse_transform(q_t)
+    if args.gpu is None:
+        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations), 
+                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1)
+        q_t = iql.reward_scaler.reverse_transform(q_t)
+    else:
+        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations), 
+                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1).gpu()
+        q_t = iql.reward_scaler.reverse_transform(q_t).cpu()
     num_relabel = 0
     for n in np.arange(len(r)-1, -1, -1): # index backwards
         _R = r[n] + gamma * _R
