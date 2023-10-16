@@ -105,6 +105,9 @@ class IQL(AlgoBase):
     _max_weight: float
     _use_gpu: Optional[Device]
     _impl: Optional[IQLImpl]
+    _disable_critic_update: bool
+    _disable_actor_update: bool
+    _rtg_in_r: bool
 
     def __init__(
         self,
@@ -129,6 +132,9 @@ class IQL(AlgoBase):
         scaler: ScalerArg = None,
         action_scaler: ActionScalerArg = None,
         reward_scaler: RewardScalerArg = None,
+        disable_critic_update = False,
+        disable_actor_update = False,
+        rtg_in_r = False,
         impl: Optional[IQLImpl] = None,
         **kwargs: Any,
     ):
@@ -155,6 +161,9 @@ class IQL(AlgoBase):
         self._weight_temp = weight_temp
         self._max_weight = max_weight
         self._use_gpu = check_use_gpu(use_gpu)
+        self._disable_critic_update = disable_critic_update
+        self._disable_actor_update = disable_actor_update
+        self._rtg_in_r = rtg_in_r
         self._impl = impl
 
     def _create_impl(
@@ -180,6 +189,7 @@ class IQL(AlgoBase):
             scaler=self._scaler,
             action_scaler=self._action_scaler,
             reward_scaler=self._reward_scaler,
+            rtg_in_r=self._rtg_in_r
         )
         self._impl.build()
 
@@ -188,13 +198,16 @@ class IQL(AlgoBase):
 
         metrics = {}
 
-        critic_loss, value_loss = self._impl.update_critic(batch)
-        metrics.update({"critic_loss": critic_loss, "value_loss": value_loss})
+        if not self._disable_critic_update:
+            critic_loss, value_loss = self._impl.update_critic(batch)
+            metrics.update({"critic_loss": critic_loss, "value_loss": value_loss})
 
-        actor_loss = self._impl.update_actor(batch)
-        metrics.update({"actor_loss": actor_loss})
+        if not self._disable_actor_update:
+            actor_loss = self._impl.update_actor(batch)
+            metrics.update({"actor_loss": actor_loss})
 
-        self._impl.update_critic_target()
+        if not self._disable_critic_update:
+            self._impl.update_critic_target()
 
         return metrics
 

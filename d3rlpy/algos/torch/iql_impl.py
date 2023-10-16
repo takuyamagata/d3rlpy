@@ -24,6 +24,7 @@ class IQLImpl(DDPGBaseImpl):
     _max_weight: float
     _value_encoder_factory: EncoderFactory
     _value_func: Optional[ValueFunction]
+    _rtg_in_r: bool
 
     def __init__(
         self,
@@ -46,6 +47,7 @@ class IQLImpl(DDPGBaseImpl):
         scaler: Optional[Scaler],
         action_scaler: Optional[ActionScaler],
         reward_scaler: Optional[RewardScaler],
+        rtg_in_r: bool,
     ):
         super().__init__(
             observation_shape=observation_shape,
@@ -70,6 +72,7 @@ class IQLImpl(DDPGBaseImpl):
         self._max_weight = max_weight
         self._value_encoder_factory = value_encoder_factory
         self._value_func = None
+        self._rtg_in_r = rtg_in_r
 
     def _build_actor(self) -> None:
         self._policy = create_non_squashed_normal_policy(
@@ -130,7 +133,10 @@ class IQLImpl(DDPGBaseImpl):
     def _compute_weight(self, batch: TorchMiniBatch) -> torch.Tensor:
         assert self._targ_q_func
         assert self._value_func
-        q_t = self._targ_q_func(batch.observations, batch.actions, "min")
+        if self._rtg_in_r:
+            q_t = batch.rewards # relabelled RTGs stored in rewards in batch
+        else:
+            q_t = self._targ_q_func(batch.observations, batch.actions, "min")
         v_t = self._value_func(batch.observations)
         adv = q_t - v_t
         return (self._weight_temp * adv).exp().clamp(max=self._max_weight)
