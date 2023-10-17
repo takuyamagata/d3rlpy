@@ -10,7 +10,7 @@ def main():
     parser.add_argument('--dataset', type=str, default='walker2d-medium-replay-v2')
     parser.add_argument('--seed', type=int, default=5)
     parser.add_argument('--gpu', type=int)
-    parser.add_argument('--mode', type=str, default='delayed')
+    parser.add_argument('--mode', type=str, default='normal')
     args = parser.parse_args()
 
     #dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
