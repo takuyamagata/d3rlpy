@@ -64,13 +64,20 @@ def main():
     gamma = 1.0 #0.99 # discount factor
     r = dataset.rewards
     _R = 0.0 # temporal RTGs
+    q_t = np.array([])
+    obs_ch = np.array_split(dataset.observations, 32, axis=0)
+    act_ch = np.array_split(dataset.actions, 32, axis=0)
     if args.gpu is None:
-        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations), 
-                                    torch.tensor(dataset.actions), "min").cpu().detach().numpy().reshape(-1)
+        for obs, act in zip(obs_ch, act_ch):
+            q_t = np.append(q_t,
+                            iql._impl._targ_q_func(torch.tensor(obs), 
+                                                   torch.tensor(act), "min").cpu().detach().numpy().reshape(-1))
         q_t = iql.reward_scaler.reverse_transform(q_t)
     else:
-        q_t = iql._impl._targ_q_func(torch.tensor(dataset.observations).to(f"cuda:{args.gpu}"), 
-                                     torch.tensor(dataset.actions).to(f"cuda:{args.gpu}"), "min").cpu().detach().numpy().reshape(-1)
+        for obs, act in zip(obs_ch, act_ch):
+            q_t = np.append(q_t,
+                            iql._impl._targ_q_func(torch.tensor(obs).to(f"cuda:{args.gpu}"), 
+                                                   torch.tensor(act).to(f"cuda:{args.gpu}"), "min").cpu().detach().numpy().reshape(-1))
         q_t = iql.reward_scaler.reverse_transform(q_t)
     num_relabel = 0
     for n in np.arange(len(r)-1, -1, -1): # index backwards
@@ -81,8 +88,8 @@ def main():
             # relabelling RTGs with learned value function
             if _R < q_t[n]:
                 num_relabel = num_relabel + 1
-            # _R = np.maximum(_R, q_t[n])
-            _R = q_t[n]
+            _R = np.maximum(_R, q_t[n])
+            # _R = q_t[n]
         r[n] = _R
     print(f"Relabelling: {num_relabel} / {len(r)} = {num_relabel/len(r)}")
     
