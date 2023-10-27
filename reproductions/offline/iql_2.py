@@ -92,6 +92,7 @@ def main():
             # _R = q_t[n]
         r[n] = _R
     print(f"Relabelling: {num_relabel} / {len(r)} = {num_relabel/len(r)}")
+    r = iql.reward_scaler.transform(r)
     
     # define Relabelled dataset
     r_dataset = d3rlpy.dataset.MDPDataset(
