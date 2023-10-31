@@ -92,7 +92,8 @@ def main():
             # _R = q_t[n]
         r[n] = _R
     print(f"Relabelling: {num_relabel} / {len(r)} = {num_relabel/len(r)}")
-    r = iql.reward_scaler.transform(r)
+    r = iql.reward_scaler.transform(r) # apply reward scaling to the relabelled return
+
     
     # define Relabelled dataset
     r_dataset = d3rlpy.dataset.MDPDataset(
@@ -106,6 +107,7 @@ def main():
     # disable critic update
     iql._disable_critic_update = True
     iql._disable_actor_update = False
+    iql._reward_scaler = None # disable reward scaling
 
     iql.fit(r_dataset.episodes,
             eval_episodes=test_episodes,
