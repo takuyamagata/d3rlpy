@@ -49,6 +49,13 @@ def main():
     def callback(algo, epoch, total_step):
         scheduler.step()
 
+    if args.gamma != 0.99 or args.QDTgamma != 1.0:
+        experiment_name_c = f"IQL2_critic_{args.dataset}_{args.seed}_{args.mode}_{args.gamma}_{args.QDTgamma}"
+        experiment_name_a = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}_{args.gamma}_{args.QDTgamma}"
+    else:
+        experiment_name_c = f"IQL2_critic_{args.dataset}_{args.seed}_{args.mode}"
+        experiment_name_a = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}"
+
     # disable actor update
     iql._disable_critic_update = False
     iql._disable_actor_update = True
@@ -61,7 +68,7 @@ def main():
             callback=callback,
             scorers={
             },
-            experiment_name=f"IQL2_critic_{args.dataset}_{args.seed}_{args.mode}",
+            experiment_name=experiment_name_c,
             with_timestamp=False,)
 
     # relabelling rewards with RTGs
@@ -112,10 +119,6 @@ def main():
     iql._disable_actor_update = False
     iql._reward_scaler = None # disable reward scaling
 
-    if args.gamma != 0.99 or args.QDTgamma != 1.0:
-        experiment_name = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}_{args.gamma}_{args.QDTgamma}"
-    else:
-        experiment_name = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}"
     iql.fit(r_dataset.episodes,
             eval_episodes=test_episodes,
             n_steps=500000,
@@ -126,7 +129,7 @@ def main():
                 'environment': d3rlpy.metrics.evaluate_on_environment(env),
                 'value_scale': d3rlpy.metrics.average_value_estimation_scorer,
             },
-            experiment_name=experiment_name,
+            experiment_name=experiment_name_a,
             with_timestamp=False,)
 
 
