@@ -11,6 +11,9 @@ def main():
     parser.add_argument('--seed', type=int, default=5)
     parser.add_argument('--gpu', type=int)
     parser.add_argument('--mode', type=str, default='normal')
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--QDTgamma', type=float, default=1.0)
+    
     args = parser.parse_args()
 
     #dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
@@ -34,6 +37,7 @@ def main():
                            weight_temp=3.0,
                            max_weight=100.0,
                            expectile=0.7,
+                           gamma=args.gamma,
                            reward_scaler=reward_scaler,
                            rtg_in_r=True,
                            use_gpu=args.gpu,)
@@ -61,7 +65,6 @@ def main():
             with_timestamp=False,)
 
     # relabelling rewards with RTGs
-    gamma = 1.0 #0.99 # discount factor
     r = dataset.rewards
     _R = 0.0 # temporal RTGs
     q_t = np.array([])
@@ -81,7 +84,7 @@ def main():
         q_t = iql.reward_scaler.reverse_transform(q_t)
     num_relabel = 0
     for n in np.arange(len(r)-1, -1, -1): # index backwards
-        _R = r[n] + gamma * _R
+        _R = r[n] + args.QDTgamma * _R
         if dataset.episode_terminals[n]:
             _R = 0.0 # reset RTGs at terminal time-step
         else:
@@ -109,6 +112,10 @@ def main():
     iql._disable_actor_update = False
     iql._reward_scaler = None # disable reward scaling
 
+    if args.gamma != 0.99 or args.QDTgamma != 1.0:
+        experiment_name = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}_{args.gamma}_{args.QDTgamma}"
+    else:
+        experiment_name = f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}"
     iql.fit(r_dataset.episodes,
             eval_episodes=test_episodes,
             n_steps=500000,
@@ -119,7 +126,7 @@ def main():
                 'environment': d3rlpy.metrics.evaluate_on_environment(env),
                 'value_scale': d3rlpy.metrics.average_value_estimation_scorer,
             },
-            experiment_name=f"IQL2_actor_{args.dataset}_{args.seed}_{args.mode}",
+            experiment_name=experiment_name,
             with_timestamp=False,)
 
 
