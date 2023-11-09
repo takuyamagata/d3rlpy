@@ -328,7 +328,7 @@ ATARI_GAMES = [
 ]
 
 
-def get_dataset(env_name: str, mode: str ='normal') -> Tuple[MDPDataset, gym.Env]:
+def get_dataset(env_name: str, mode: str ='normal', filter_top: float =1.0) -> Tuple[MDPDataset, gym.Env]:
     """Returns dataset and envrironment by guessing from name.
 
     This function returns dataset by matching name with the following datasets.
@@ -398,5 +398,52 @@ def get_dataset(env_name: str, mode: str ='normal') -> Tuple[MDPDataset, gym.Env
             terminals=dataset.terminals,
             episode_terminals=dataset.episode_terminals,
         )
+    
+    if filter_top < 1.0:
+        # select top    x return trajectories (filter_top > 0) or 
+        # select bottom x return trajectories (filter_top < 0)
+        num_timesteps = max(int(np.abs(filter_top) * len(dataset.rewards)), 1)
+        returns = np.array([np.sum(path.rewards) for path in dataset.episodes])
+        traj_lens = np.array([len(path.rewards) for path in dataset.episodes])
+        
+        if filter_top > 0:
+            sorted_inds = np.argsort(
+                returns
+            )  # lowest to highest -> select higher X% of timesteps
+        else:
+            sorted_inds = np.argsort(
+                -returns
+            )  # highest to lowest -> select lower X% of timesteps
+        num_trajectories = 1
+        timesteps = traj_lens[sorted_inds[-1]]
+        ind = len(dataset.episodes) - 2
+        while (
+            ind >= 0 and timesteps + traj_lens[sorted_inds[ind]] <= num_timesteps
+        ):
+            timesteps += traj_lens[sorted_inds[ind]]
+            num_trajectories += 1
+            ind -= 1
+        sorted_inds = sorted_inds[-num_trajectories:]
+
+        o, a, r, t, et = [], [], [], [], []
+        for idx in sorted_inds:
+            o.append(dataset.episodes[idx].observations)
+            a.append(dataset.episodes[idx].actions)
+            r.append(dataset.episodes[idx].rewards)
+            t_ = np.zeros_like(dataset.episodes[idx].rewards)
+            t_[-1] = dataset.episodes[idx].terminal
+            t.append(t_)
+            et_ = np.zeros_like(dataset.episodes[idx].rewards)
+            et_[-1] = 1.0
+            et.append(et_)
+
+        dataset = MDPDataset(
+            observations=np.vstack(o),
+            actions=np.vstack(a),
+            rewards=np.hstack(r),
+            terminals=np.hstack(t),
+            episode_terminals=np.hstack(et),
+        )
+
     
     return dataset, env
