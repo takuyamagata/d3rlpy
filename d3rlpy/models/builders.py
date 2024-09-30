@@ -14,6 +14,7 @@ from .torch import (
     DiscreteImitator,
     EnsembleContinuousQFunction,
     EnsembleDiscreteQFunction,
+    TedContinuousQFunction,
     NonSquashedNormalPolicy,
     Parameter,
     ProbabilisticDynamicsModel,
@@ -68,6 +69,30 @@ def create_continuous_q_function(
             )
         q_funcs.append(q_func_factory.create_continuous(encoder))
     return EnsembleContinuousQFunction(q_funcs)
+
+def create_ted_continuous_q_function(
+    observation_shape: Sequence[int],
+    action_size: int,
+    encoder_factory: EncoderFactory,
+    q_func_factory: QFunctionFactory,
+    taylor_order: int = 4,
+) -> EnsembleContinuousQFunction:
+    if q_func_factory.share_encoder:
+        encoder = encoder_factory.create_with_action(
+            observation_shape, action_size
+        )
+        # normalize gradient scale by ensemble size
+        for p in cast(nn.Module, encoder).parameters():
+            p.register_hook(lambda grad: grad / n_ensembles)
+
+    q_funcs = []
+    for _ in range(taylor_order+1):
+        if not q_func_factory.share_encoder:
+            encoder = encoder_factory.create_with_action(
+                observation_shape, action_size
+            )
+        q_funcs.append(q_func_factory.create_continuous(encoder))
+    return TedContinuousQFunction(q_funcs)
 
 
 def create_deterministic_policy(
@@ -195,6 +220,17 @@ def create_value_function(
 ) -> ValueFunction:
     encoder = encoder_factory.create(observation_shape)
     return ValueFunction(encoder)
+
+def create_ted_value_function(
+    observation_shape: Sequence[int], encoder_factory: EncoderFactory, taylor_order:int
+) -> nn.ModuleList:
+    v_funcs = []
+    for _ in range(taylor_order+1):
+        encoder = encoder_factory.create(observation_shape)
+        v_funcs.append(
+            ValueFunction(encoder)
+        )
+    return nn.ModuleList(v_funcs)
 
 
 def create_probabilistic_ensemble_dynamics_model(

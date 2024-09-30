@@ -19,6 +19,7 @@ from .sac import SAC, DiscreteSAC
 from .edac import EDAC
 from .td3 import TD3
 from .td3_plus_bc import TD3PlusBC
+from .ted_iql import TedIQL
 
 __all__ = [
     "AlgoBase",
@@ -36,6 +37,7 @@ __all__ = [
     "DQN",
     "DoubleDQN",
     "IQL",
+    "TedIQL",
     "MOPO",
     "NFQ",
     "PLAS",
@@ -73,6 +75,7 @@ CONTINUOUS_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "crr": CRR,
     "ddpg": DDPG,
     "iql": IQL,
+    "ted_iql": TedIQL,
     "mopo": MOPO,
     "plas": PLASWithPerturbation,
     "sac": SAC,

@@ -193,13 +193,14 @@ def average_value_estimation_scorer(
         average value estimation.
 
     """
-    total_values = []
-    for episode in episodes:
-        for batch in _make_batches(episode, WINDOW_SIZE, algo.n_frames):
-            actions = algo.predict(batch.observations)
-            values = algo.predict_value(batch.observations, actions)
-            total_values += cast(np.ndarray, values).tolist()
-    return float(np.mean(total_values))
+    # total_values = []
+    # for episode in episodes:
+    #     for batch in _make_batches(episode, WINDOW_SIZE, algo.n_frames):
+    #         actions = algo.predict(batch.observations)
+    #         values = algo.predict_value(batch.observations, actions)
+    #         total_values += cast(np.ndarray, values).tolist()
+    # return float(np.mean(total_values))
+    return np.nan
 
 
 def value_estimation_std_scorer(
