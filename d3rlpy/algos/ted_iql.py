@@ -125,6 +125,7 @@ class TedIQL(AlgoBase):
         gamma_base: float = 0.99,
         gamma: float = 0.999,
         tau: float = 0.005,
+        n_critics: int = 2,
         taylor_order: int = 4,
         expectile: float = 0.7,
         weight_temp: float = 3.0,
@@ -157,6 +158,7 @@ class TedIQL(AlgoBase):
         self._critic_encoder_factory = check_encoder(critic_encoder_factory)
         self._value_encoder_factory = check_encoder(value_encoder_factory)
         self._tau = tau
+        self._n_critics = n_critics
         self._gamma_base = gamma_base
         self._taylor_order = taylor_order
         self._expectile = expectile
@@ -184,6 +186,7 @@ class TedIQL(AlgoBase):
             gamma_base=self._gamma_base,
             gamma=self._gamma,
             tau=self._tau,
+            n_critics=self._n_critics,
             taylor_order=self._taylor_order,
             expectile=self._expectile,
             weight_temp=self._weight_temp,

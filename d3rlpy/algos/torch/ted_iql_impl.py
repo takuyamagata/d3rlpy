@@ -2,11 +2,13 @@ from typing import Optional, Sequence
 
 import numpy as np
 import torch
+from torch import nn
 
 from ...gpu import Device
 from ...models.builders import (
     create_non_squashed_normal_policy,
-    create_ted_value_function,
+    create_value_function,
+    create_continuous_q_function,
 )
 from ...models.encoders import EncoderFactory
 from ...models.optimizers import OptimizerFactory
@@ -14,10 +16,10 @@ from ...models.q_functions import MeanQFunctionFactory
 from ...models.torch import NonSquashedNormalPolicy, ValueFunction
 from ...preprocessing import ActionScaler, RewardScaler, Scaler
 from ...torch_utility import TorchMiniBatch, torch_api, train_api
-from .ted_ddpg_impl import TedDDPGBaseImpl
+from .ddpg_impl import DDPGBaseImpl
 
 
-class TedIQLImpl(TedDDPGBaseImpl):
+class TedIQLImpl(DDPGBaseImpl):
     _policy: Optional[NonSquashedNormalPolicy]
     _expectile: float
     _weight_temp: float
@@ -40,6 +42,7 @@ class TedIQLImpl(TedDDPGBaseImpl):
         gamma_base: float,
         gamma: float,
         tau: float,
+        n_critics: int,
         taylor_order: int,
         expectile: float,
         weight_temp: float,
@@ -60,10 +63,9 @@ class TedIQLImpl(TedDDPGBaseImpl):
             actor_encoder_factory=actor_encoder_factory,
             critic_encoder_factory=critic_encoder_factory,
             q_func_factory=MeanQFunctionFactory(),
-            gamma_base=gamma_base,
             gamma=gamma,
             tau=tau,
-            taylor_order=taylor_order,
+            n_critics=n_critics,
             use_gpu=use_gpu,
             scaler=scaler,
             action_scaler=action_scaler,
@@ -74,6 +76,8 @@ class TedIQLImpl(TedDDPGBaseImpl):
         self._max_weight = max_weight
         self._value_encoder_factory = value_encoder_factory
         self._value_func = None
+        self._gamma_base = gamma_base
+        self._taylor_order = taylor_order
         self._rtg_in_r = rtg_in_r
 
     def _build_actor(self) -> None:
@@ -87,10 +91,26 @@ class TedIQLImpl(TedDDPGBaseImpl):
         )
 
     def _build_critic(self) -> None:
-        super()._build_critic()
-        self._value_func = create_ted_value_function(
-            self._observation_shape, self._value_encoder_factory, self._taylor_order,
-        )
+        q_funcs = []
+        v_funcs = []
+        for _ in range(self._taylor_order+1):
+            q_funcs.append(
+                create_continuous_q_function(
+                    self._observation_shape,
+                    self._action_size,
+                    self._critic_encoder_factory,
+                    self._q_func_factory,
+                    n_ensembles=self._n_critics,
+                )
+            )
+            v_funcs.append(
+                create_value_function(
+                    self._observation_shape, self._value_encoder_factory,
+                )
+            )   
+        self._q_func = nn.ModuleList(q_funcs)
+        self._value_func = nn.ModuleList(v_funcs)
+            
 
     def _build_critic_optim(self) -> None:
         assert self._q_func is not None
@@ -105,21 +125,28 @@ class TedIQLImpl(TedDDPGBaseImpl):
         self, batch: TorchMiniBatch, q_tpn: torch.Tensor
     ) -> torch.Tensor:
         assert self._q_func is not None
-        rewards = [batch.rewards]
-        for v_func in self._value_func[:-1]:
-            rewards.append(
-                v_func(batch.next_observations) * (self._gamma - self._gamma_base)
-            )
-        rewards = torch.stack(rewards, dim=0)
+        with torch.no_grad():
+            rewards = [batch.rewards]
+            for v_func in self._value_func[:-1]:
+                rewards.append(
+                    v_func(batch.next_observations) * (self._gamma - self._gamma_base)
+                )
+            rewards = torch.stack(rewards, dim=0)
         
-        return self._q_func.compute_error(
-            observations=batch.observations,
-            actions=batch.actions,
-            rewards=rewards,
-            target=q_tpn,
-            terminals=batch.terminals,
-            gamma=self._gamma_base**batch.n_steps,
+        td_sum = torch.tensor(
+            0.0, dtype=torch.float32, device=batch.observations.device
         )
+        for n, q_func in enumerate(self._q_func):
+            loss = q_func.compute_error(
+                    observations=batch.observations,
+                    actions=batch.actions,
+                    rewards=rewards[n],
+                    target=q_tpn[n],
+                    terminals=batch.terminals,
+                    gamma=self._gamma_base**batch.n_steps,
+            )
+            td_sum += loss.mean()
+        return td_sum
 
     def compute_target(self, batch: TorchMiniBatch) -> torch.Tensor:
         assert self._value_func
@@ -147,10 +174,17 @@ class TedIQLImpl(TedDDPGBaseImpl):
     def _compute_weight(self, batch: TorchMiniBatch) -> torch.Tensor:
         assert self._targ_q_func
         assert self._value_func
-        if self._rtg_in_r:
-            q_t = batch.rewards # relabelled RTGs stored in rewards in batch
-        else:
-            q_t = self._targ_q_func(batch.observations, batch.actions)
+        q_t = []
+        for targ_q_func in self._targ_q_func:
+            if self._rtg_in_r:
+                q_t.append(
+                    batch.rewards # relabelled RTGs stored in rewards in batch
+                )
+            else:
+                q_t.append(
+                    targ_q_func(batch.observations, batch.actions, "min")   
+                )
+        q_t = torch.stack(q_t, dim=0)
         v_t = []
         for v_func in self._value_func:
             v_t.append(
@@ -163,7 +197,12 @@ class TedIQLImpl(TedDDPGBaseImpl):
     def compute_value_loss(self, batch: TorchMiniBatch) -> torch.Tensor:
         assert self._targ_q_func
         assert self._value_func
-        q_t = self._targ_q_func(batch.observations, batch.actions)
+        q_t = []
+        for targ_q_func in self._targ_q_func:
+            q_t.append(
+                targ_q_func(batch.observations, batch.actions, "min")
+            )
+        q_t = torch.stack(q_t, dim=0)
         v_t = []
         for v_func in self._value_func:
             v_t.append(

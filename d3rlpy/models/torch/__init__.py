@@ -37,10 +37,6 @@ from .q_functions.ensemble_q_function import (
     EnsembleDiscreteQFunction,
     EnsembleQFunction,
 )
-from .q_functions.ted_q_function import (
-    TedContinuousQFunction,
-    TedQFunction,
-)
 from .q_functions.fqf_q_function import (
     ContinuousFQFQFunction,
     DiscreteFQFQFunction,
