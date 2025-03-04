@@ -1,7 +1,7 @@
 import dataclasses
 
 import torch
-from torch import nn
+#from torch import nn
 
 from ....models.torch import (
     ActionOutput,
@@ -25,7 +25,7 @@ __all__ = ["SeqIQLImpl", "SeqIQLModules"]
 @dataclasses.dataclass(frozen=True)
 class SeqIQLModules(DDPGBaseModules):
     policy: NormalPolicy
-    v_funcs: nn.ModuleList
+    v_funcs: ValueFunction #nn.ModuleList
 
 
 @dataclasses.dataclass(frozen=True)
@@ -54,6 +54,7 @@ class SeqIQLImpl(DDPGBaseImpl):
         expectile: float,
         weight_temp: float,
         max_weight: float,
+        compiled: bool,
         device: str,
     ):
         super().__init__(
@@ -64,6 +65,7 @@ class SeqIQLImpl(DDPGBaseImpl):
             targ_q_func_forwarder=targ_q_func_forwarder,
             gamma=gamma,
             tau=tau,
+            compiled=compiled,
             device=device,
         )
         self._gamma_base = gamma_base

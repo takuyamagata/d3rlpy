@@ -8,7 +8,7 @@ import d4rl.gym_mujoco # not required...
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="maze2d-large-v1")
+    parser.add_argument("--dataset", type=str, default="maze2d-medium-v1")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--gpu", type=int)
     parser.add_argument("--compile", action="store_true")
@@ -49,7 +49,6 @@ def main() -> None:
         n_steps=500000,
         n_steps_per_epoch=2500,
         save_interval=10,
-        callback=callback,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
         experiment_name=f"SeqIQL_{args.dataset}_{args.seed}",
     )

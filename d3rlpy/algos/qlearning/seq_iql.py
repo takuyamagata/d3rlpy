@@ -8,8 +8,8 @@ from ...models.builders import (
     create_normal_policy,
 )
 from ...models.encoders import EncoderFactory, make_encoder_field
-from ...models import OptimizerFactory, make_optimizer_field
 from ...models.q_functions import MeanQFunctionFactory
+from ...optimizers.optimizers import OptimizerFactory, make_optimizer_field
 from ...types import Shape
 from .base import QLearningAlgoBase
 from .torch.seq_iql_impl import SeqIQLImpl, SeqIQLModules
@@ -95,8 +95,10 @@ class SeqIQLConfig(LearnableConfig):
     weight_temp: float = 3.0
     max_weight: float = 100.0
 
-    def create(self, device: DeviceArg = False) -> "SeqIQL":
-        return SeqIQL(self, device)
+    def create(
+            self, device: DeviceArg = False, enable_ddp: bool = False
+    ) -> "SeqIQL":
+        return SeqIQL(self, device, enable_ddp)
 
     @staticmethod
     def get_type() -> str:
@@ -115,6 +117,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             max_logstd=2.0,
             use_std_parameter=True,
             device=self._device,
+            enable_ddp=self._enable_ddp,
         )
         q_funcs, q_func_forwarder = create_continuous_seq_q_function(
             observation_shape,
@@ -123,6 +126,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             MeanQFunctionFactory(),
             taylor_order=self._config.taylor_order,
             device=self._device,
+            enable_ddp=self._enable_ddp,
         )
         targ_q_funcs, targ_q_func_forwarder = create_continuous_seq_q_function(
             observation_shape,
@@ -131,20 +135,26 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             MeanQFunctionFactory(),
             taylor_order=self._config.taylor_order,
             device=self._device,
+            enable_ddp=self._enable_ddp,
         )
         v_funcs = create_seq_value_function(
             observation_shape,
             self._config.value_encoder_factory,
             self._config.taylor_order,
             device=self._device,
+            enable_ddp=self._enable_ddp,
         )
         actor_optim = self._config.actor_optim_factory.create(
-            policy.named_modules(), lr=self._config.actor_learning_rate
+            policy.named_modules(), 
+            lr=self._config.actor_learning_rate,
+            compiled=self.compiled,
         )
         q_func_params = list(q_funcs.named_modules())
         v_func_params = list(v_funcs.named_modules())
         critic_optim = self._config.critic_optim_factory.create(
-            q_func_params + v_func_params, lr=self._config.critic_learning_rate
+            q_func_params + v_func_params, 
+            lr=self._config.critic_learning_rate,
+            compiled=self.compiled,
         )
 
         modules = SeqIQLModules(
@@ -169,6 +179,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             expectile=self._config.expectile,
             weight_temp=self._config.weight_temp,
             max_weight=self._config.max_weight,
+            compiled=self.compiled,
             device=self._device,
         )
 

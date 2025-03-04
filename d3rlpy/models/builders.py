@@ -32,7 +32,7 @@ from .utility import create_activation
 __all__ = [
     "create_discrete_q_function",
     "create_continuous_q_function",
-    "create_continuous_ted_q_function",
+    "create_continuous_seq_q_function",
     "create_deterministic_policy",
     "create_deterministic_residual_policy",
     "create_categorical_policy",
@@ -40,7 +40,7 @@ __all__ = [
     "create_vae_encoder",
     "create_vae_decoder",
     "create_value_function",
-    "create_ted_value_function",
+    "create_seq_value_function",
     "create_parameter",
     "create_continuous_decision_transformer",
     "create_discrete_decision_transformer",
@@ -131,14 +131,15 @@ def create_continuous_q_function(
     return q_func_modules, ensemble_forwarder
 
 
-def create_continuous_ted_q_function(
+def create_continuous_seq_q_function(
     observation_shape: Shape,
     action_size: int,
     encoder_factory: EncoderFactory,
     q_func_factory: QFunctionFactory,
     device: str,
+    enable_ddp: bool,
     taylor_order: int = 4,
-) -> tuple[nn.ModuleList, ContinuousTedQFunctionForwarder]:
+) -> tuple[nn.ModuleList, ContinuousSeqQFunctionForwarder]:
     if q_func_factory.share_encoder:
         encoder = encoder_factory.create_with_action(
             observation_shape, action_size
@@ -151,7 +152,7 @@ def create_continuous_ted_q_function(
             p.register_hook(lambda grad: grad / taylor_order)
 
     q_funcs = []
-    ted_forwarders = []
+    seq_forwarders = []
     for _ in range(taylor_order+1):
         if not q_func_factory.share_encoder:
             encoder = encoder_factory.create_with_action(
@@ -163,14 +164,17 @@ def create_continuous_ted_q_function(
         q_func, forwarder = q_func_factory.create_continuous(
             encoder, hidden_size
         )
+        if enable_ddp:
+            q_func = wrap_model_by_ddp(q_func)
+            forwarder.set_q_func(q_func)
         q_funcs.append(q_func)
-        ted_forwarders.append(forwarder)
+        seq_forwarders.append(forwarder)
     q_func_modules = nn.ModuleList(q_funcs)
     q_func_modules.to(device)
-    ted_forwarders = ContinuousTedQFunctionForwarder(
-        ted_forwarders, action_size
+    seq_forwarders = ContinuousSeqQFunctionForwarder(
+        seq_forwarders, action_size
     )
-    return q_func_modules, ted_forwarders
+    return q_func_modules, seq_forwarders
 
 
 def create_deterministic_policy(
@@ -326,8 +330,12 @@ def create_value_function(
     return value_func
 
 
-def create_ted_value_function(
-    observation_shape: Shape, encoder_factory: EncoderFactory, taylor_order:int, device: str
+def create_seq_value_function(
+    observation_shape: Shape, 
+    encoder_factory: EncoderFactory, 
+    taylor_order:int, 
+    device: str, 
+    enable_ddp: bool,
 ) -> nn.ModuleList:
     v_funcs = []
     for _ in range(taylor_order+1):
@@ -336,6 +344,7 @@ def create_ted_value_function(
                 observation_shape,
                 encoder_factory,
                 device=device,
+                enable_ddp=enable_ddp,
             )
         )
     return nn.ModuleList(v_funcs)
