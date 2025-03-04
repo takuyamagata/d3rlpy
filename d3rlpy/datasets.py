@@ -730,7 +730,7 @@ def get_dataset(
             trajectory_slicer=trajectory_slicer,
             render_mode=render_mode,
         )
-    elif re.match(r"hopper|halfcheetah|walker|ant", env_name):
+    elif re.match(r"hopper|halfcheetah|walker|maze2d|ant", env_name):
         return get_d4rl(
             env_name,
             transition_picker=transition_picker,
