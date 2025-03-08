@@ -11,6 +11,16 @@ __all__ = [
     "ContinuousSeqQFunctionForwarder",
 ]
 
+def _reduce_ensemble(
+    y: torch.Tensor, reduction: str = "min", dim: int = 0, lam: float = 0.75
+) -> torch.Tensor:
+    if reduction == "mean":
+        return y.sum(dim=dim)
+    elif reduction == "none":
+        return y
+    raise ValueError
+
+
 def compute_seq_q_function_error(
     forwarders: Union[
         Sequence[DiscreteQFunctionForwarder],
@@ -56,7 +66,7 @@ class ContinuousSeqQFunctionForwarder:
         self._action_size = action_size
 
     def compute_expected_q(
-        self, x: TorchObservation, action: torch.Tensor
+        self, x: TorchObservation, action: torch.Tensor, reduction: Optional[str] = "none"
     ) -> torch.Tensor:
         values = []
         for forwarder in self._forwarders:
@@ -71,7 +81,7 @@ class ContinuousSeqQFunctionForwarder:
                     1,
                 )
             )
-        return torch.stack(values, dim=0)
+        return _reduce_ensemble(torch.stack(values, dim=0), reduction=reduction)
 
     def compute_error(
         self,
