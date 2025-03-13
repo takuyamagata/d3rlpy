@@ -108,7 +108,7 @@ def main() -> None:
         env=env,
         context_size=args.context_size,
         gpu=args.gpu,
-        log_prefix=f"QDT-{args.q_learning_type}-",
+        log_prefix=f"QDT-{args.q_learning_type}",
         log_postfix=log_postfix,
         compile=args.compile,
     )
