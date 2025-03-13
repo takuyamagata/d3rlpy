@@ -243,7 +243,7 @@ def fit_cql(
 
     cql.fit(
         dataset,
-        n_steps=2000, #500000,
+        n_steps=500000,
         n_steps_per_epoch=1000,
         save_interval=50,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
@@ -302,7 +302,7 @@ def fit_iql(
     
     iql.fit(
         dataset,
-        n_steps=2000, #500000,
+        n_steps=500000,
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={
@@ -360,7 +360,7 @@ def fit_seq_iql(
 
     seq_iql.fit(
         dataset,
-        n_steps=2000, #500000,
+        n_steps=500000,
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
@@ -443,7 +443,7 @@ def fit_dt(
 
     dt.fit(
         dataset,
-        n_steps=2000, #100000,
+        n_steps=100000,
         n_steps_per_epoch=1000,
         save_interval=10,
         eval_env=env,
