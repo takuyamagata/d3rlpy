@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--q_learning_type",
         type=str,
-        default="seq_iql", #"cql",
+        default="cql",
         choices=["cql", "iql", "seq_iql", "none"],
     )
     parser.add_argument("--seed", type=int, default=1)
@@ -44,8 +44,8 @@ def main() -> None:
     d3rlpy.envs.seed_env(env, args.seed)
 
     # delayed reward
-    print("Modified dataset to delayed reward...")
-    if True: #args.delayed_reward:
+    if args.delayed_reward:
+        print("Modified dataset to delayed reward...")
         delayed_reward(dataset._buffer)
 
     # first fit Q-learning algorithm to the dataset
@@ -182,7 +182,7 @@ def delayed_reward(buffer: InfiniteBuffer):
         episode, idx = buffer._transitions[n]  # get transitions backwards
         if idx == 0:
             relabelled_rewards = np.zeros_like(episode.rewards)
-            relabelled_rewards[-1] = np.sum(episode.rewards)
+            relabelled_rewards[episode.transition_count-1] = np.sum(episode.rewards)
             relabelled_episode = d3rlpy.dataset.components.Episode(
                 observations=episode.observations,
                 actions=episode.actions,
