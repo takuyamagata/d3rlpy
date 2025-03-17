@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--q_learning_type",
         type=str,
-        default="iql", #"cql",
+        default="cql",
         choices=["cql", "iql", "seq_iql", "none"],
     )
     parser.add_argument("--seed", type=int, default=1)
@@ -245,7 +245,7 @@ def fit_cql(
 
     cql.fit(
         dataset,
-        n_steps=2000, #500000,
+        n_steps=500000,
         n_steps_per_epoch=1000,
         save_interval=50,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
@@ -304,7 +304,7 @@ def fit_iql(
     
     iql.fit(
         dataset,
-        n_steps=2000, #500000,
+        n_steps=500000,
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={
