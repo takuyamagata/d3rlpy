@@ -22,7 +22,7 @@ def main() -> None:
     parser.add_argument(
         "--q_learning_type",
         type=str,
-        default="cql",
+        default="iql", #"cql",
         choices=["cql", "iql", "seq_iql", "none"],
     )
     parser.add_argument("--seed", type=int, default=1)
@@ -143,8 +143,10 @@ def relabel_dataset_rtg(
             values = []
             for _ in range(num_action_samples):
                 sampled_actions = q_algo.sample_action(episode.observations)
+                v = q_algo.predict_value(episode.observations, sampled_actions)
                 values.append(
-                    q_algo.predict_value(episode.observations, sampled_actions)
+                    v if q_algo.reward_scaler is None 
+                          else q_algo.reward_scaler.reverse_transform(v)
                 )
             value = np.array(values).mean(axis=0)
             rewards = np.squeeze(episode.rewards, axis=1)
@@ -243,7 +245,7 @@ def fit_cql(
 
     cql.fit(
         dataset,
-        n_steps=500000,
+        n_steps=2000, #500000,
         n_steps_per_epoch=1000,
         save_interval=50,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
@@ -302,7 +304,7 @@ def fit_iql(
     
     iql.fit(
         dataset,
-        n_steps=500000,
+        n_steps=2000, #500000,
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={
