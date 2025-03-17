@@ -400,22 +400,22 @@ def fit_dt(
     elif "walker" in env.spec.id:
         target_return = 5000
     elif "maze2d-umaze-dense" in env.spec.id:
-        target_return = 400
+        target_return = 500
     elif "maze2d-umaze" in env.spec.id:
-        target_return = 400
+        target_return = 500
     elif "maze2d-medium-dense" in env.spec.id:
         target_return = 300
     elif "maze2d-medium" in env.spec.id:
-        target_return = 250
+        target_return = 300
     elif "maze2d-large-dense" in env.spec.id:
-        target_return = 350
+        target_return = 500
     elif "maze2d-large" in env.spec.id:
-        target_return = 250
+        target_return = 500
     else:
         raise ValueError("unsupported dataset")
     
     if "maze2d" in env.spec.id:
-        reward_scaler = 0.01
+        reward_scaler = 0.02
     else:
         reward_scaler = 0.001
 
