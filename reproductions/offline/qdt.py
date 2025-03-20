@@ -225,7 +225,9 @@ def fit_cql(
     """
     encoder = d3rlpy.models.encoders.VectorEncoderFactory([256, 256, 256])
 
-    if "medium-v0" in env.spec.id:
+    if "maze2d" in env.spec.id:
+        conservative_weight = 1.0
+    elif "medium-v" in env.spec.id:
         conservative_weight = 10.0
     else:
         conservative_weight = 5.0
