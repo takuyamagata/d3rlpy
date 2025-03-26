@@ -123,7 +123,8 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             observation_shape,
             action_size,
             self._config.critic_encoder_factory,
-            MeanQFunctionFactory(),
+            # MeanQFunctionFactory(),
+            MeanQFunctionFactory(share_encoder=True), # default False
             taylor_order=self._config.taylor_order,
             device=self._device,
             enable_ddp=self._enable_ddp,

@@ -147,9 +147,9 @@ def create_continuous_seq_q_function(
         hidden_size = compute_output_size(
             [observation_shape, (action_size,)], encoder
         )
-        # normalize gradient scale by ensemble size
-        for p in cast(nn.Module, encoder).parameters():
-            p.register_hook(lambda grad: grad / taylor_order)
+        # normalize gradient scale by expansion order
+        # for p in cast(nn.Module, encoder).parameters():
+        #     p.register_hook(lambda grad: grad / taylor_order)
 
     q_funcs = []
     seq_forwarders = []

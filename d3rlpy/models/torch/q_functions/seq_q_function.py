@@ -14,10 +14,10 @@ __all__ = [
 def _reduce_ensemble(
     y: torch.Tensor, reduction: str = "min", dim: int = 0, lam: float = 0.75
 ) -> torch.Tensor:
-    if reduction == "mean":
-        return y.sum(dim=dim)
-    elif reduction == "none":
+    if reduction == "none":
         return y
+    else:
+        return y.sum(dim=dim)
     raise ValueError
 
 
