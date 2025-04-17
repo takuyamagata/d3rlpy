@@ -123,8 +123,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             observation_shape,
             action_size,
             self._config.critic_encoder_factory,
-            MeanQFunctionFactory(),
-            # MeanQFunctionFactory(share_encoder=True), # default False
+            MeanQFunctionFactory(share_encoder=True),
             taylor_order=self._config.taylor_order,
             device=self._device,
             enable_ddp=self._enable_ddp,
@@ -133,7 +132,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             observation_shape,
             action_size,
             self._config.critic_encoder_factory,
-            MeanQFunctionFactory(),
+            MeanQFunctionFactory(share_encoder=True),
             taylor_order=self._config.taylor_order,
             device=self._device,
             enable_ddp=self._enable_ddp,
@@ -142,6 +141,7 @@ class SeqIQL(QLearningAlgoBase[SeqIQLImpl, SeqIQLConfig]):
             observation_shape,
             self._config.value_encoder_factory,
             self._config.taylor_order,
+            share_encoder=True,
             device=self._device,
             enable_ddp=self._enable_ddp,
         )

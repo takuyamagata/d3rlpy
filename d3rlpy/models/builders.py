@@ -333,20 +333,28 @@ def create_value_function(
 def create_seq_value_function(
     observation_shape: Shape, 
     encoder_factory: EncoderFactory, 
-    taylor_order:int, 
+    taylor_order:int,
+    share_encoder: bool, 
     device: str, 
     enable_ddp: bool,
 ) -> nn.ModuleList:
+    if share_encoder:
+        encoder = encoder_factory.create(observation_shape)
+        hidden_size = compute_output_size([observation_shape], encoder)
+        # normalize gradient scale by expansion order
+        # for p in cast(nn.Module, encoder).parameters():
+        #     p.register_hook(lambda grad: grad / taylor_order)
+
     v_funcs = []
     for _ in range(taylor_order+1):
-        v_funcs.append(
-            create_value_function(
-                observation_shape,
-                encoder_factory,
-                device=device,
-                enable_ddp=enable_ddp,
-            )
-        )
+        if not share_encoder:
+            encoder = encoder_factory.create(observation_shape)
+            hidden_size = compute_output_size([observation_shape], encoder)
+        v_func = ValueFunction(encoder, hidden_size)
+        v_func.to(device)
+        if enable_ddp:
+            v_func = wrap_model_by_ddp(v_func)
+        v_funcs.append(v_func)
     return nn.ModuleList(v_funcs)
 
 
