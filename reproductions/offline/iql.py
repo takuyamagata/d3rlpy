@@ -47,7 +47,7 @@ def main() -> None:
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
-        experiment_name=f"IQL_{args.dataset}_{args.seed}",
+        experiment_name=f"IQL_{args.dataset}_{args.gamma}_{args.seed}",
     )
 
 
