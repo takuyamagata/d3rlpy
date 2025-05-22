@@ -9,6 +9,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--gpu", type=int)
     parser.add_argument("--compile", action="store_true")
+    parser.add_argument("--weight_temp", type=float, default=3.0)
+    parser.add_argument("--expectile", type=float, default=0.7)
+    parser.add_argument("--gamma", type=float, default=0.99)
     args = parser.parse_args()
 
     dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
@@ -30,9 +33,10 @@ def main() -> None:
             ),
         ),
         batch_size=256,
-        weight_temp=3.0,
+        weight_temp=args.weight_temp,
+        gamma=args.gamma,
+        expectile=args.expectile,
         max_weight=100.0,
-        expectile=0.7,
         reward_scaler=reward_scaler,
         compile_graph=args.compile,
     ).create(device=args.gpu)
