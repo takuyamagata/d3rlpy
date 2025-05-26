@@ -1,7 +1,7 @@
 import argparse
 
 import d3rlpy
-
+import d4rl.gym_mujoco
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -47,7 +47,7 @@ def main() -> None:
         n_steps_per_epoch=1000,
         save_interval=10,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
-        experiment_name=f"IQL_{args.dataset}_{args.gamma}_{args.seed}",
+        experiment_name=f"IQL_{args.dataset}_{args.gamma}_{args.expectile}_{args.seed}",
     )
 
 

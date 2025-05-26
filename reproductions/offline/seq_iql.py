@@ -14,6 +14,8 @@ def main() -> None:
     parser.add_argument("--compile", action="store_true")
     parser.add_argument("--weight_temp", type=float, default=3.0)
     parser.add_argument("--expectile", type=float, default=0.7)
+    parser.add_argument("--gamma", type=float, default=0.999)
+    parser.add_argument("--gamma_base", type=float, default=0.99)
     args = parser.parse_args()
 
     dataset, env = d3rlpy.datasets.get_dataset(args.dataset)
@@ -35,8 +37,8 @@ def main() -> None:
             ),
         ),
         batch_size=256,
-        gamma_base=0.99,
-        gamma=0.999,
+        gamma_base=args.gamma_base,
+        gamma=args.gamma,
         expectile=args.expectile,
         weight_temp=args.weight_temp,
         max_weight=100.0,
@@ -50,7 +52,7 @@ def main() -> None:
         n_steps_per_epoch=2500,
         save_interval=10,
         evaluators={"environment": d3rlpy.metrics.EnvironmentEvaluator(env)},
-        experiment_name=f"SeqIQL_{args.dataset}_{args.seed}",
+        experiment_name=f"SeqIQL_{args.dataset}_{args.gamma}_{args.gamma_base}_{args.expectile}_{args.seed}",
     )
 
 
